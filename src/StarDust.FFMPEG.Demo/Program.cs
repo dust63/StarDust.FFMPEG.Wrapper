@@ -13,7 +13,7 @@ namespace StarDust.FFMPEG.Demo
 
             Console.WriteLine("Lauching ffmpeg");
             var ffmpegPath = @"C:\ProgramData\chocolatey\lib\ffmpeg\tools\ffmpeg\bin\ffmpeg.exe";
-            var wrapper = new FFProcessWrapper(ffmpegPath);
+            var wrapper = new FFMPEGProcessWrapper(ffmpegPath);
             wrapper.ErrorDataReceived += (s, e) => Console.Error.WriteLine(e.Data);
             wrapper.OutputDataReceived += (s, e) => Console.WriteLine(e.Data);
             Task.Run(async ()=> await wrapper.Start("-f gdigrab -framerate 30 -i desktop -y D:\\output.mkv"));

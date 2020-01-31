@@ -9,28 +9,50 @@ using System.Threading.Tasks;
 
 namespace StarDust.FFMPEG.Wrapper
 {
-    public class FFProcessWrapper
+    ///<inheritdoc/>
+    public class FFMPEGProcessWrapper : IFFMPEGProcessWrapper
     {
-        public EventHandler<FFMpegOutputEventArgs> OutputDataReceived;
+        #region -- Fields --
 
-        public delegate void OutputDataReceivedEventHandler(SynchronizationContext context);
+        private CancellationTokenSource _cancellationToken;
 
-        public EventHandler<FFMpegOutputEventArgs> ErrorDataReceived;
+        #endregion
 
-        public delegate void ErrorDataReceivedEventHandler(SynchronizationContext context);
+        #region -- Events --
+
+        /// <inheritdoc/>   
+        public event EventHandler<FFMpegOutputEventArgs> OutputDataReceived;
+
+        /// <inheritdoc/>   
+        public event EventHandler<FFMpegOutputEventArgs> ErrorDataReceived;
+
+        #endregion
+
+        #region -- Properties --
 
         
-        public string FFMPEGPath { get; private set; }
-           
+        /// <inheritdoc/>   
+        public string FFMPEGPath { get; set; }
 
+        /// <inheritdoc/>   
         public Process FFMpegProcess { get; private set; }
 
+        /// <inheritdoc/>   
         public bool IsRunning { get; private set; }
-        public StreamWriter InputFFmpeg { get; private set; }
 
-        private CancellationTokenSource CancellationToken { get; set; }
+        #endregion
 
-        public FFProcessWrapper(string ffmpegPath)
+        #region -- Ctors --
+
+        public FFMPEGProcessWrapper()
+        {
+        }
+
+        /// <summary>
+        /// Ctor
+        /// </summary>
+        /// <param name="ffmpegPath"></param>
+        public FFMPEGProcessWrapper(string ffmpegPath)
         {
             if (File.Exists(ffmpegPath))
                 FFMPEGPath = ffmpegPath;
@@ -38,13 +60,10 @@ namespace StarDust.FFMPEG.Wrapper
                     FileNotFoundException("Can't localize ffmpeg.exe", ffmpegPath);
         }
 
+        #endregion
 
-        public async void Test()
-        {
-            await Start("-version");
-        }
-
-
+        #region -- Public methods
+        /// <inheritdoc/>   
         public async Task Start(string arguments, CancellationTokenSource tokenSource = default)
         {
             if (FFMpegProcess != null)
@@ -53,14 +72,14 @@ namespace StarDust.FFMPEG.Wrapper
             if (tokenSource == default(CancellationTokenSource))
                 tokenSource = new CancellationTokenSource();
 
-            CancellationToken = tokenSource;        
+            _cancellationToken = tokenSource;
 
 
             FFMpegProcess = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = FFMPEGPath,
+                    FileName = FFMPEGPath ?? "ffmpeg.exe",
                     Arguments = arguments,
                     CreateNoWindow = true,
                     UseShellExecute = false,
@@ -71,56 +90,25 @@ namespace StarDust.FFMPEG.Wrapper
                     StandardErrorEncoding = Encoding.UTF8,
                     StandardOutputEncoding = Encoding.UTF8
                 }
-            };      
+            };
 
             try
             {
                 FFMpegProcess.Start();
+                IsRunning = true;
                 await Task.WhenAny(
-                  ReadStream(FFMpegProcess.StandardOutput, OnOutputReceived, CancellationToken.Token),
-                  ReadStream(FFMpegProcess.StandardError, OnErrorReceived, CancellationToken.Token),
-                  FFMpegProcess.WaitForExitAsync(CancellationToken.Token)
+                  ReadStream(FFMpegProcess.StandardOutput, OnOutputReceived, _cancellationToken.Token),
+                  ReadStream(FFMpegProcess.StandardError, OnErrorReceived, _cancellationToken.Token),
+                  FFMpegProcess.WaitForExitAsync(_cancellationToken.Token)
                   );
             }
             finally
             {
-                CancellationToken = null;
+                _cancellationToken = null;
                 DisposingFFmpegProcess();
             }
         }
-
-
-        private void DisposingFFmpegProcess()
-        {
-            FFMpegProcess?.Dispose();
-            FFMpegProcess = null;
-        }
-
-
-        private Task OnErrorReceived(string obj)
-        {
-            var e = new FFMpegOutputEventArgs(obj);
-            return ErrorDataReceived.InvokeAsync(this, e);
-        }
-
-        private Task OnOutputReceived(string obj)
-        {
-            var e = new FFMpegOutputEventArgs(obj);
-            return OutputDataReceived.InvokeAsync(this, e);
-        }
-
-        private async static Task ReadStream(TextReader textReader, Func<string, Task> callback, CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {           
-                var line = await textReader.ReadLineAsync();
-                if (line == null)
-                    break;
-
-                await callback(line);
-            }
-        }
-
+        /// <inheritdoc/>   
         public async Task Stop()
         {
             if (FFMpegProcess == null)
@@ -130,9 +118,9 @@ namespace StarDust.FFMPEG.Wrapper
             FFMpegProcess.StandardInput?.Write("q");
 
             //Wait 2sec for the process to exited
-            await Task.WhenAny(Task.Delay(2000), Task.Run(async ()=>
+            await Task.WhenAny(Task.Delay(2000), Task.Run(async () =>
             {
-                while(!(FFMpegProcess?.HasExited ?? true))
+                while (!(FFMpegProcess?.HasExited ?? true))
                 {
                     await Task.Delay(100);
                 }
@@ -143,31 +131,80 @@ namespace StarDust.FFMPEG.Wrapper
                 return;
 
             //Try to cancel
-            CancellationToken.Cancel();
+            _cancellationToken.Cancel();
             await Task.Delay(500);
 
             //Kill the process if already present
             if (FFMpegProcess != null && !FFMpegProcess.HasExited)
                 Kill();
         }
-
-
+        /// <inheritdoc/>   
         public void Kill()
         {
             FFMpegProcess?.Kill();
             DisposingFFmpegProcess();
         }
 
+        #endregion
 
-    }
+        #region -- Private methods
 
-    public class FFMpegOutputEventArgs : DeferredEventArgs
-    {
 
-        public FFMpegOutputEventArgs(string data)
+        /// <summary>
+        /// Disposing ffmpeg process and set variable
+        /// </summary>
+        private void DisposingFFmpegProcess()
         {
-            Data = data;
+            FFMpegProcess?.Dispose();
+            FFMpegProcess = null;
+            IsRunning = false;
         }
-        public string Data { get; }
+
+
+        /// <summary>
+        /// When we received error from ffmpeg console
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private Task OnErrorReceived(string data)
+        {
+            var e = new FFMpegOutputEventArgs(data);
+            return ErrorDataReceived.InvokeAsync(this, e);
+        }
+
+        /// <summary>
+        /// When we receive an error from output console
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private Task OnOutputReceived(string data)
+        {
+            var e = new FFMpegOutputEventArgs(data);
+            return OutputDataReceived.InvokeAsync(this, e);
+        }
+
+
+        /// <summary>
+        /// use to listen console of ffmpeg
+        /// </summary>
+        /// <param name="textReader"></param>
+        /// <param name="callback"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        private async static Task ReadStream(TextReader textReader, Func<string, Task> callback, CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var line = await textReader.ReadLineAsync();
+                if (line == null)
+                    break;
+
+                await callback(line);
+            }
+        }
+
+        #endregion
+
+
     }
 }
