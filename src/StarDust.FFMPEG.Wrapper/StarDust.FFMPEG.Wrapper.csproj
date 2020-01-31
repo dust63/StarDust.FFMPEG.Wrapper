@@ -8,4 +8,10 @@
     <PackageReference Include="DeferredEvents" Version="1.0.5" />
   </ItemGroup>
 
+  <Target Name="PrePackage" BeforeTargets="BuildPackage">
+    <PropertyGroup>
+      <BuildCommand>$(BuildCommand) -IncludeReferencedProjects</BuildCommand>
+    </PropertyGroup>
+  </Target>
+
 </Project>
