@@ -1,0 +1,76 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ assembly name="$(ProjectDir)bin\$(ConfigurationName)\netcoreapp3.1\StarDust.FFMPEG.ClassGenerator.dll" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Runtime" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="StarDust.FFMPEG.ClassGenerator" #>
+<#@ import namespace="System.IO" #>
+<#@ output extension=".cs" #>
+
+<# /* For Runtime exception see "https://stackoverflow.com/questions/51550265/t4-template-could-not-load-file-or-assembly-system-runtime-version-4-2-0-0 */ #>
+
+
+<#
+string projectPath = Host.ResolveAssemblyReference("$(ProjectDir)");
+var listCodec = Parse($"{projectPath}\\ffmpeg_datas\\codecs.txt");
+var videoCodecs = listCodec.Where(x=> x.Video);
+#>
+public static class VideoCodecs {
+
+<#
+foreach(var v in listCodec.Where(x=> x.Video && x.Encoding)){
+#> 
+    ///<summary>
+    /// <#=v.Description#>
+    ///</summary>
+    public static string <#= Char.IsDigit(v.Name[0]) ?  "_" + v.Name : v.Name #> = "<#= v.Name #>";
+
+<#
+}
+#>
+
+}
+
+public static class AudioCodecs {
+
+<#
+foreach(var v in listCodec.Where(x=> x.Audio && x.Encoding)){
+
+#> 
+    ///<summary>
+    ///<#=v.Description#>
+    ///</summary>
+    public static string <#= Char.IsDigit(v.Name[0]) ?  "_" + v.Name : v.Name #> = "<#= v.Name #>";
+
+<#
+}
+#>
+
+}
+
+
+<#+   // Start of class feature block
+private static List<CodecDescriptor> Parse(string codecsFilePath)
+        {
+            // Read the file and display it line by line.  
+            using (StreamReader sr = File.OpenText(codecsFilePath))
+            {
+                var result = new List<CodecDescriptor>();
+                string line = String.Empty;
+                var counter = 0;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    counter++;
+                    if (counter < 11)
+                        continue;
+                    string field1 = line.Substring(1, 7).Trim();
+                    string field2 = line.Substring(8, 21).Trim();
+                    string field3 = line.Substring(29, line.Length - 29).Trim();
+                    result.Add(CodecDescriptor.Parse(field1, field2, field3));
+                }
+                return result;
+            }
+        }
+#>
