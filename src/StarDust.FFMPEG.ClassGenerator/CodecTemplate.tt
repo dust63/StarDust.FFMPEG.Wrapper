@@ -8,48 +8,87 @@
 <#@ import namespace="StarDust.FFMPEG.ClassGenerator" #>
 <#@ import namespace="System.IO" #>
 <#@ output extension=".cs" #>
-
 <# /* For Runtime exception see "https://stackoverflow.com/questions/51550265/t4-template-could-not-load-file-or-assembly-system-runtime-version-4-2-0-0 */ #>
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
+namespace StarDust.FFMPEG.ClassGenerator
+{
+    public static class VideoEncoders {
 
 <#
 string projectPath = Host.ResolveAssemblyReference("$(ProjectDir)");
 var listCodec = Parse($"{projectPath}\\ffmpeg_datas\\codecs.txt");
 var videoCodecs = listCodec.Where(x=> x.Video);
-#>
-public static class VideoCodecs {
 
-<#
 foreach(var v in listCodec.Where(x=> x.Video && x.Encoding)){
 #> 
-    ///<summary>
-    /// <#=v.Description#>
-    ///</summary>
-    public static string <#= Char.IsDigit(v.Name[0]) ?  "_" + v.Name : v.Name #> = "<#= v.Name #>";
+        ///<summary>
+        /// <#=v.Description#>
+        ///</summary>
+        [Display(Name = "<#= v.Name.Replace("_"," ") #>")]
+        [Description("<#= v.Description #>")]
+        public static string <#= Char.IsDigit(v.Name[0]) ?  "_" + v.Name : v.Name #> = "<#= v.Name #>";
 
 <#
 }
 #>
 
+        public static IDictionary<string,string> GetDisplayValues()
+        {
+            return ReflectionHelpers.GetDisplayValues<string>(typeof(VideoEncoders));
+        }
+
 }
 
-public static class AudioCodecs {
+    public static class AudioEncoders {
 
 <#
 foreach(var v in listCodec.Where(x=> x.Audio && x.Encoding)){
-
 #> 
-    ///<summary>
-    ///<#=v.Description#>
-    ///</summary>
-    public static string <#= Char.IsDigit(v.Name[0]) ?  "_" + v.Name : v.Name #> = "<#= v.Name #>";
+        ///<summary>
+        ///<#=v.Description#>
+        ///</summary>
+        [Display(Name = "<#= v.Name.Replace("_"," ") #>")]
+        [Description("<#= v.Description #>")]
+        public static string <#= Char.IsDigit(v.Name[0]) ?  "_" + v.Name : v.Name #> = "<#= v.Name #>";
 
 <#
 }
 #>
 
+        public static IDictionary<string,string> GetDisplayValues()
+        {
+            return ReflectionHelpers.GetDisplayValues<string>(typeof(AudioEncoders));
+        }
+
 }
 
+
+    public static class SubtitleEncoders {
+
+<#
+foreach(var v in listCodec.Where(x=> x.Subtitle && x.Encoding)){
+#> 
+        ///<summary>
+        ///<#=v.Description#>
+        ///</summary>
+        [Display(Name = "<#= v.Name.Replace("_"," ") #>")]
+        [Description("<#= v.Description #>")]
+        public static string <#= Char.IsDigit(v.Name[0]) ?  "_" + v.Name : v.Name #> = "<#= v.Name #>";
+
+<#
+}
+#>
+
+        public static IDictionary<string,string> GetDisplayValues()
+        {
+            return ReflectionHelpers.GetDisplayValues<string>(typeof(SubtitleEncoders));
+        }
+
+    }
+}
 
 <#+   // Start of class feature block
 private static List<CodecDescriptor> Parse(string codecsFilePath)
@@ -74,3 +113,4 @@ private static List<CodecDescriptor> Parse(string codecsFilePath)
             }
         }
 #>
+

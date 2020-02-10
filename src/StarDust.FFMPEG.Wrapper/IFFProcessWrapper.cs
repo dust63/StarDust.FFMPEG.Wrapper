@@ -34,6 +34,8 @@ namespace StarDust.FFMPEG.Wrapper
         /// </summary>
         void Kill();
 
+        Task<string> StartAndGetResult(string arguments, CancellationTokenSource tokenSource);
+
         /// <summary>
         /// Start ffmpeg with arguments
         /// </summary>

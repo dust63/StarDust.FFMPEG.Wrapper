@@ -63,6 +63,33 @@ namespace StarDust.FFMPEG.Wrapper
         #endregion
 
         #region -- Public methods
+        public async Task<string> StartAndGetResult(string arguments, CancellationTokenSource tokenSource)
+        {
+            var sb = new StringBuilder();
+           var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = FFMPEGPath ?? "ffmpeg.exe",
+                    Arguments = arguments,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,                   
+                    StandardErrorEncoding = Encoding.UTF8,
+                    StandardOutputEncoding = Encoding.UTF8
+                }
+            };
+            process.Start();
+            sb.Append(process.StandardOutput.ReadToEnd());
+            sb.AppendLine(process.StandardError.ReadToEnd());          
+            await process.WaitForExitAsync(tokenSource?.Token ?? default(CancellationToken));
+
+            return sb.ToString();
+        }
+
+
         /// <inheritdoc/>   
         public async Task Start(string arguments, CancellationTokenSource tokenSource = default)
         {

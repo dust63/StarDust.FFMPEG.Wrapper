@@ -27,11 +27,11 @@ namespace StarDust.FFMPEG.ClassGenerator
         {
             return new CodecDescriptor
             {
-                Video = data.Contains("V"),
-                Audio = data.Contains("A"),
-                Subtitle = data.Contains("S"),
-                Encoding = data.Contains("E"),
-                Decoding = data.Contains("D"),
+                Video = data.IndexOf("V") == 2,
+                Audio = data.IndexOf("A") == 2,
+                Subtitle = data.IndexOf("S") == 2,
+                Encoding = data.IndexOf("E") == 1,
+                Decoding = data.IndexOf("D") == 0,
                 Name = name,
                 Description = description
             };

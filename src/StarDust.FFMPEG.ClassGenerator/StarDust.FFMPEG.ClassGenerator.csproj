@@ -9,8 +9,8 @@
 
   <ItemGroup>
     <None Update="CodecTemplate.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CodecTemplate.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
     </None>
   </ItemGroup>
 

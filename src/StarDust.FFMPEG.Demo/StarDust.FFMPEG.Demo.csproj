@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\StarDust.FFMPEG.ClassGenerator\StarDust.FFMPEG.ClassGenerator.csproj" />
     <ProjectReference Include="..\StarDust.FFMPEG.Wrapper\StarDust.FFMPEG.Wrapper.csproj" />
   </ItemGroup>
 
